@@ -55,8 +55,10 @@ app.get('/api/health', (req, res) => {
 
 // Upload file endpoint
 app.post('/api/upload', upload.single('file'), async (req, res) => {
+  console.log('🔔 [REQUEST] Upload endpoint hit!');
   try {
     if (!req.file) {
+      console.log('❌ [ERROR] No file in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
