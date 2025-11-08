@@ -314,27 +314,77 @@ const Dashboard = ({ chatData, relationshipType: initialRelationshipType, onRese
             <div className="hidden md:block">
               <ConversationGalaxy data={galaxyData} />
             </div>
+
+            {/* Footer */}
+            <div className="text-center py-6 text-sm relative z-10">
+              <p className="text-gray-600 dark:text-gray-400">
+                Made with ❤️ by{' '}
+                <a href="https://www.instagram.com/abhi_rawat_uk1" target="_blank" rel="noopener noreferrer" className="font-bold prism-text hover:underline transition-all duration-300 relative z-10 cursor-pointer">
+                  Abhi_rwt
+                </a>
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="reply-times" className="space-y-3 md:space-y-6">
             <ReplyTimeChart data={chatData.replyTimes} />
             <MessageLengthCard data={messageLengthStats} participants={chatData.participants} />
+
+            {/* Footer */}
+            <div className="text-center py-6 text-sm">
+              <p className="text-gray-600 dark:text-gray-400">
+                Made with ❤️ by{' '}
+                <a href="https://www.instagram.com/abhi_rawat_uk1" target="_blank" rel="noopener noreferrer" className="font-bold prism-text hover:underline transition-all duration-300">
+                  Abhi_rwt
+                </a>
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="emojis" className="space-y-3 md:space-y-6">
             <EmojiChart data={chatData.emojiFrequency} />
             <EmojiCompatibilityCard data={emojiCompatibility} participants={chatData.participants} />
+
+            {/* Footer */}
+            <div className="text-center py-6 text-sm">
+              <p className="text-gray-600 dark:text-gray-400">
+                Made with ❤️ by{' '}
+                <a href="https://www.instagram.com/abhi_rawat_uk1" target="_blank" rel="noopener noreferrer" className="font-bold prism-text hover:underline transition-all duration-300">
+                  Abhi_rwt
+                </a>
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="words" className="space-y-3 md:space-y-6">
             <WordChart data={chatData.wordFrequency} />
             <TopWordsCard data={chatData.wordFrequency} participants={chatData.participants} />
             <ConversationStarterCard data={conversationStarters} participants={chatData.participants} />
+
+            {/* Footer */}
+            <div className="text-center py-6 text-sm">
+              <p className="text-gray-600 dark:text-gray-400">
+                Made with ❤️ by{' '}
+                <a href="https://www.instagram.com/abhi_rawat_uk1" target="_blank" rel="noopener noreferrer" className="font-bold prism-text hover:underline transition-all duration-300">
+                  Abhi_rwt
+                </a>
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-3 md:space-y-6">
             <ActivityHeatmap data={chatData.hourlyActivity} />
             <PeakActivityCard data={peakActivity} participants={chatData.participants} />
+
+            {/* Footer */}
+            <div className="text-center py-6 text-sm">
+              <p className="text-gray-600 dark:text-gray-400">
+                Made with ❤️ by{' '}
+                <a href="https://www.instagram.com/abhi_rawat_uk1" target="_blank" rel="noopener noreferrer" className="font-bold prism-text hover:underline transition-all duration-300">
+                  Abhi_rwt
+                </a>
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

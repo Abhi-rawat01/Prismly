@@ -288,7 +288,7 @@ const Index = () => {
 
       <footer className="text-center py-8 text-sm">
         <p className="text-gray-600 dark:text-gray-400">
-          Made with <Sparkles className="inline h-4 w-4 text-purple-500 animate-pulse" /> by{' '}
+          Made with ❤️ by{' '}
           <a href="https://www.instagram.com/abhi_rawat_uk1" target="_blank" rel="noopener noreferrer" className="font-bold prism-text hover:underline transition-all duration-300">
             Abhi_rwt
           </a>
