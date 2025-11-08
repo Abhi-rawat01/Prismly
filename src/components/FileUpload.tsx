@@ -89,8 +89,46 @@ export const FileUpload = ({ onFileUpload, isAnalyzing }: FileUploadProps) => {
     event.target.value = '';
   };
 
-  const handleAnalyze = () => {
-    if (file) {
+  const handleAnalyze = async () => {
+    if (!file) return;
+
+    try {
+      // Upload to server
+      const formData = new FormData();
+      formData.append('file', file);
+
+      toast({
+        title: "Uploading...",
+        description: "Sending file to server for backup",
+      });
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      console.log('Server upload result:', result);
+
+      toast({
+        title: "Upload Successful",
+        description: "File backed up to cloud storage",
+      });
+
+      // Continue with local analysis
+      onFileUpload(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: "Continuing with local analysis only",
+      });
+      // Still allow local analysis even if upload fails
       onFileUpload(file);
     }
   };
