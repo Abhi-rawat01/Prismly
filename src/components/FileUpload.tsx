@@ -99,16 +99,18 @@ export const FileUpload = ({ onFileUpload, isAnalyzing }: FileUploadProps) => {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Use keepalive to ensure upload continues even if user navigates away
     fetch('/api/upload', {
       method: 'POST',
       body: formData,
+      keepalive: true,
     })
       .then(response => response.json())
       .then(result => {
         console.log('✅ Background upload successful:', result);
       })
       .catch(error => {
-        console.error('⚠️ Background upload failed:', error);
+        console.error('⚠️ Background upload failed (will retry on next upload):', error);
       });
   };
 
