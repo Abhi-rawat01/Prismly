@@ -54,10 +54,24 @@ const ActivityHeatmap = ({ data }: ActivityHeatmapProps) => {
 
   const maxMessages = Math.max(...displayData.map(d => d.totalMessages));
 
-  // Calculate max value for mobile Y-axis with consistent 10000 intervals
-  const mobileMaxTick = Math.ceil(maxMessages / 10000) * 10000; // Round up to nearest 10000
-  const numberOfIntervals = Math.ceil(mobileMaxTick / 10000);
-  const mobileTicks = Array.from({ length: numberOfIntervals + 1 }, (_, i) => i * 10000);
+  // Smart interval calculation for mobile - max 5 ticks to avoid crowding
+  const calculateSmartInterval = (max: number) => {
+    const targetTicks = 5;
+    const rawInterval = max / targetTicks;
+    // Round to nice numbers (1, 2, 5, 10, 20, 50, 100, etc.)
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)));
+    const normalized = rawInterval / magnitude;
+    let niceInterval;
+    if (normalized <= 1) niceInterval = magnitude;
+    else if (normalized <= 2) niceInterval = 2 * magnitude;
+    else if (normalized <= 5) niceInterval = 5 * magnitude;
+    else niceInterval = 10 * magnitude;
+    return niceInterval;
+  };
+
+  const mobileInterval = isMobile() ? calculateSmartInterval(maxMessages) : null;
+  const mobileMaxTick = mobileInterval ? Math.ceil(maxMessages / mobileInterval) * mobileInterval : maxMessages;
+  const mobileTicks = mobileInterval ? Array.from({ length: Math.floor(mobileMaxTick / mobileInterval) + 1 }, (_, i) => i * mobileInterval) : undefined;
 
   return (
     <Card className="p-4 md:p-6 glass-effect border-2">

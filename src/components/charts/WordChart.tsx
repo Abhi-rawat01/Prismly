@@ -37,11 +37,25 @@ const WordChart = ({ data }: WordChartProps) => {
     .sort((a, b) => b.total - a.total)
     .slice(0, isMobile() ? 7 : 15);
 
-  // Calculate max value for mobile Y-axis with consistent 4000 intervals
+  // Smart interval calculation for mobile - max 5 ticks to avoid crowding
+  const calculateSmartInterval = (max: number) => {
+    const targetTicks = 5;
+    const rawInterval = max / targetTicks;
+    // Round to nice numbers (1, 2, 5, 10, 20, 50, 100, etc.)
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)));
+    const normalized = rawInterval / magnitude;
+    let niceInterval;
+    if (normalized <= 1) niceInterval = magnitude;
+    else if (normalized <= 2) niceInterval = 2 * magnitude;
+    else if (normalized <= 5) niceInterval = 5 * magnitude;
+    else niceInterval = 10 * magnitude;
+    return niceInterval;
+  };
+
   const maxValue = Math.max(...chartData.map(d => d.total));
-  const mobileMaxTick = Math.ceil(maxValue / 4000) * 4000; // Round up to nearest 4000
-  const numberOfIntervals = Math.ceil(mobileMaxTick / 4000);
-  const mobileTicks = Array.from({ length: numberOfIntervals + 1 }, (_, i) => i * 4000);
+  const mobileInterval = isMobile() ? calculateSmartInterval(maxValue) : null;
+  const mobileMaxTick = mobileInterval ? Math.ceil(maxValue / mobileInterval) * mobileInterval : maxValue;
+  const mobileTicks = mobileInterval ? Array.from({ length: Math.floor(mobileMaxTick / mobileInterval) + 1 }, (_, i) => i * mobileInterval) : undefined;
 
   // Colors for the two participants - light red and blue
   const colors = ['#ef4444', '#3b82f6'];
