@@ -83,13 +83,14 @@ export function scheduleFileDelete(filePath, delayMinutes = 5) {
   setTimeout(() => {
     try {
       if (fs.existsSync(filePath)) {
+        const fileName = filePath.split('/').pop();
         fs.unlinkSync(filePath);
-        console.log(`🗑️ Successfully deleted local file: ${filePath}`);
+        console.log(`✅ [DELETED] File removed from local storage: ${fileName}`);
       } else {
-        console.log(`⚠️ File already deleted: ${filePath}`);
+        console.log(`⚠️  [WARNING] File already deleted: ${filePath}`);
       }
     } catch (error) {
-      console.error(`❌ Error deleting file ${filePath}:`, error);
+      console.error(`❌ [ERROR] Failed to delete file ${filePath}:`, error);
     }
   }, delayMs);
 }

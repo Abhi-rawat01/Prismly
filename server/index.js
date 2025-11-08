@@ -69,21 +69,28 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       uploadedAt: new Date().toISOString()
     };
 
-    console.log('✅ File uploaded to server:', fileInfo.originalName);
+    console.log('📤 [UPLOAD] Someone uploaded a file:', fileInfo.originalName, `(${(fileInfo.size / 1024).toFixed(2)} KB)`);
 
-    // Upload to Drime Cloud Storage
+    // Save to local disk
+    console.log('💾 [SAVED] File saved to local disk:', req.file.path);
+
+    // Upload to Cloud Storage
     let cloudUploadResult = null;
     try {
       const { uploadToCloudStorage, scheduleFileDelete } = await import('./cloudStorage.js');
+      
+      console.log('☁️  [BACKUP] Sending file to cloud backup...');
       cloudUploadResult = await uploadToCloudStorage(req.file);
+      console.log('✅ [BACKUP] File successfully backed up to cloud storage');
       
       // Schedule file deletion after 5 minutes
       const deleteDelay = parseInt(process.env.FILE_DELETE_DELAY_MINUTES) || 5;
       scheduleFileDelete(req.file.path, deleteDelay);
       
-      console.log(`✅ File uploaded to cloud and scheduled for deletion in ${deleteDelay} minutes`);
+      console.log(`🗑️  [DELETE] File scheduled for deletion in ${deleteDelay} minutes`);
     } catch (cloudError) {
-      console.error('⚠️ Cloud upload failed, file kept locally:', cloudError.message);
+      console.error('❌ [BACKUP] Cloud backup failed:', cloudError.message);
+      console.log('⚠️  [WARNING] File kept locally only');
     }
 
     res.json({
@@ -93,7 +100,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       cloudUpload: cloudUploadResult
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('❌ [ERROR] Upload failed:', error);
     res.status(500).json({ error: 'Failed to upload file' });
   }
 });
