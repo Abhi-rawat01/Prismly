@@ -18,6 +18,56 @@ const SLEEP_START_HOUR = 2; // 2 AM
 const SLEEP_END_HOUR = 5; // 5 AM
 let keepAliveInterval = null;
 
+// Sleep tracking
+const sleepTrackingFile = path.join(__dirname, 'sleep-tracking.json');
+let serverStartTime = null;
+let lastActivityTime = null;
+
+// Initialize or load sleep tracking data
+const loadSleepTracking = () => {
+  try {
+    if (fs.existsSync(sleepTrackingFile)) {
+      const data = fs.readFileSync(sleepTrackingFile, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading sleep tracking:', error);
+  }
+  return { sleepSessions: [], totalSleepMinutes: 0 };
+};
+
+const saveSleepTracking = (data) => {
+  try {
+    fs.writeFileSync(sleepTrackingFile, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error saving sleep tracking:', error);
+  }
+};
+
+const recordWakeUp = () => {
+  const now = new Date();
+  const tracking = loadSleepTracking();
+  
+  // If there's a last activity time, calculate sleep duration
+  if (lastActivityTime) {
+    const sleepDuration = Math.floor((now - lastActivityTime) / 1000 / 60); // minutes
+    
+    // Only record if sleep was more than 10 minutes (actual sleep, not just a pause)
+    if (sleepDuration > 10) {
+      tracking.sleepSessions.push({
+        sleepStart: lastActivityTime.toISOString(),
+        wakeUp: now.toISOString(),
+        durationMinutes: sleepDuration
+      });
+      tracking.totalSleepMinutes += sleepDuration;
+      saveSleepTracking(tracking);
+      console.log(`😴 [SLEEP] Recorded sleep session: ${sleepDuration} minutes`);
+    }
+  }
+  
+  lastActivityTime = now;
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -120,6 +170,9 @@ const startKeepAlive = () => {
 
 // Health check
 app.get('/api/health', (req, res) => {
+  // Record activity (wake up if was sleeping)
+  recordWakeUp();
+  
   const status = {
     status: 'ok',
     message: 'Server is running',
@@ -132,6 +185,88 @@ app.get('/api/health', (req, res) => {
   };
   console.log('💓 [HEALTH] Health check received');
   res.json(status);
+});
+
+// Sleep tracking endpoint
+app.get('/api/sleep', (req, res) => {
+  const tracking = loadSleepTracking();
+  const now = new Date();
+  
+  // Group sleep sessions by month
+  const monthlyStats = {};
+  const dailyStats = {};
+  
+  tracking.sleepSessions.forEach(session => {
+    const date = new Date(session.sleepStart);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const dayKey = `${monthKey}-${String(date.getDate()).padStart(2, '0')}`;
+    
+    // Monthly totals
+    if (!monthlyStats[monthKey]) {
+      monthlyStats[monthKey] = { totalMinutes: 0, sessions: 0 };
+    }
+    monthlyStats[monthKey].totalMinutes += session.durationMinutes;
+    monthlyStats[monthKey].sessions += 1;
+    
+    // Daily totals
+    if (!dailyStats[dayKey]) {
+      dailyStats[dayKey] = { totalMinutes: 0, sessions: 0 };
+    }
+    dailyStats[dayKey].totalMinutes += session.durationMinutes;
+    dailyStats[dayKey].sessions += 1;
+  });
+  
+  // Format monthly stats
+  const formattedMonthly = Object.entries(monthlyStats).map(([month, stats]) => {
+    const hours = Math.floor(stats.totalMinutes / 60);
+    const minutes = stats.totalMinutes % 60;
+    return {
+      month,
+      format: `${month}:${String(hours).padStart(2, '0')}h:${String(minutes).padStart(2, '0')}m`,
+      totalMinutes: stats.totalMinutes,
+      totalHours: (stats.totalMinutes / 60).toFixed(2),
+      sessions: stats.sessions
+    };
+  });
+  
+  // Format daily stats
+  const formattedDaily = Object.entries(dailyStats).map(([day, stats]) => {
+    const hours = Math.floor(stats.totalMinutes / 60);
+    const minutes = stats.totalMinutes % 60;
+    return {
+      day,
+      format: `${day}:${String(hours).padStart(2, '0')}h:${String(minutes).padStart(2, '0')}m`,
+      totalMinutes: stats.totalMinutes,
+      totalHours: (stats.totalMinutes / 60).toFixed(2),
+      sessions: stats.sessions
+    };
+  });
+  
+  // Calculate uptime since server start
+  const uptimeMinutes = serverStartTime ? Math.floor((now - serverStartTime) / 1000 / 60) : 0;
+  const uptimeHours = Math.floor(uptimeMinutes / 60);
+  const uptimeDays = Math.floor(uptimeHours / 24);
+  
+  res.json({
+    status: 'ok',
+    timestamp: now.toISOString(),
+    serverStartTime: serverStartTime?.toISOString(),
+    uptime: {
+      minutes: uptimeMinutes,
+      hours: uptimeHours,
+      days: uptimeDays,
+      formatted: `${uptimeDays}d ${uptimeHours % 24}h ${uptimeMinutes % 60}m`
+    },
+    totalSleep: {
+      minutes: tracking.totalSleepMinutes,
+      hours: (tracking.totalSleepMinutes / 60).toFixed(2),
+      formatted: `${Math.floor(tracking.totalSleepMinutes / 60)}h ${tracking.totalSleepMinutes % 60}m`
+    },
+    monthly: formattedMonthly,
+    daily: formattedDaily,
+    recentSessions: tracking.sleepSessions.slice(-10).reverse(), // Last 10 sessions
+    totalSessions: tracking.sleepSessions.length
+  });
 });
 
 // Upload file endpoint
@@ -219,6 +354,10 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Uploads directory: ${uploadsDir}`);
+  
+  // Initialize server start time and record wake up
+  serverStartTime = new Date();
+  recordWakeUp();
   
   // Start keep-alive mechanism
   startKeepAlive();
