@@ -29,7 +29,7 @@ Click "Create cronjob" and configure:
 **Schedule:**
 - **Type**: Select "Every day"
 - **Time**: `05:00` (5:00 AM)
-- **Timezone**: Select your timezone (or UTC)
+- **Timezone**: Select "Asia/Kolkata" (Indian Standard Time)
 
 **Advanced (Optional):**
 - **Timeout**: 30 seconds
@@ -42,14 +42,14 @@ Click "Create cronjob" and configure:
 ## How It Works
 
 ```
-Timeline:
-├─ 2:00 AM  → Server stops self-pinging (sleep window starts)
-├─ 2:15 AM  → Render puts server to sleep (no activity)
-├─ 5:00 AM  → cron-job.org pings server (WAKE UP!)
-├─ 5:00 AM  → Server wakes up and starts self-pinging
-├─ 5:10 AM  → Server pings itself (stays awake)
-├─ 5:20 AM  → Server pings itself (stays awake)
-└─ ...continues all day until 2:00 AM next day
+Timeline (IST - Indian Standard Time):
+├─ 2:00 AM IST  → Server stops self-pinging (sleep window starts)
+├─ 2:15 AM IST  → Render puts server to sleep (no activity)
+├─ 5:00 AM IST  → cron-job.org pings server (WAKE UP!)
+├─ 5:00 AM IST  → Server wakes up and starts self-pinging
+├─ 5:10 AM IST  → Server pings itself (stays awake)
+├─ 5:20 AM IST  → Server pings itself (stays awake)
+└─ ...continues all day until 2:00 AM IST next day
 ```
 
 ## Verify Setup
@@ -65,7 +65,7 @@ Timeline:
   "keepAlive": {
     "active": true,
     "inSleepWindow": false,
-    "sleepWindow": "2:00 - 5:00 UTC"
+    "sleepWindow": "2:00 - 5:00 IST"
   }
 }
 ```

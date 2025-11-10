@@ -8,14 +8,28 @@ const SLEEP_END_HOUR = 5; // 5 AM
 let pingInterval: NodeJS.Timeout | null = null;
 
 /**
- * Check if current time is within scheduled sleep window
- * Uses UTC time to ensure consistent sleep window globally
+ * Check if current time is within scheduled sleep window (IST)
+ * Uses IST (Indian Standard Time) for consistent sleep window
  */
 const isInSleepWindow = (): boolean => {
   const now = new Date();
-  const hourUTC = now.getUTCHours();
-  // 2-5 AM UTC is when global traffic is typically lowest
-  return hourUTC >= SLEEP_START_HOUR && hourUTC < SLEEP_END_HOUR;
+  
+  // Convert UTC to IST (UTC + 5:30)
+  const utcHours = now.getUTCHours();
+  const utcMinutes = now.getUTCMinutes();
+  
+  let istHours = utcHours + 5;
+  let istMinutes = utcMinutes + 30;
+  
+  if (istMinutes >= 60) {
+    istHours += 1;
+    istMinutes -= 60;
+  }
+  
+  istHours = istHours % 24;
+  
+  // Check if current IST time is in sleep window (2-5 AM IST)
+  return istHours >= SLEEP_START_HOUR && istHours < SLEEP_END_HOUR;
 };
 
 /**
@@ -24,7 +38,7 @@ const isInSleepWindow = (): boolean => {
 const pingServer = async (): Promise<void> => {
   // Skip ping during sleep window
   if (isInSleepWindow()) {
-    console.log('⏰ [KEEP-ALIVE] In sleep window (2-5 AM), skipping ping');
+    console.log('⏰ [KEEP-ALIVE] In sleep window (2-5 AM IST), skipping ping');
     return;
   }
 
@@ -52,7 +66,7 @@ export const startKeepAlive = (): void => {
   }
 
   console.log('🚀 [KEEP-ALIVE] Starting keep-alive service');
-  console.log(`⏰ [KEEP-ALIVE] Sleep window: ${SLEEP_START_HOUR}:00 AM - ${SLEEP_END_HOUR}:00 AM`);
+  console.log(`⏰ [KEEP-ALIVE] Sleep window: ${SLEEP_START_HOUR}:00 AM - ${SLEEP_END_HOUR}:00 AM IST`);
   
   // Initial ping
   pingServer();
@@ -79,7 +93,7 @@ export const getKeepAliveStatus = () => {
   return {
     isActive: pingInterval !== null,
     isInSleepWindow: isInSleepWindow(),
-    sleepWindow: `${SLEEP_START_HOUR}:00 AM - ${SLEEP_END_HOUR}:00 AM`,
+    sleepWindow: `${SLEEP_START_HOUR}:00 AM - ${SLEEP_END_HOUR}:00 AM IST`,
     pingInterval: PING_INTERVAL / 1000 / 60 + ' minutes'
   };
 };

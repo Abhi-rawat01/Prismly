@@ -56,16 +56,32 @@ const upload = multer({
 // Keep-alive functions
 const isInSleepWindow = () => {
   const now = new Date();
-  const hour = now.getUTCHours(); // Use UTC time
-  // Adjust for your timezone if needed (e.g., IST is UTC+5:30)
-  // For IST: const istHour = (hour + 5) % 24;
-  return hour >= SLEEP_START_HOUR && hour < SLEEP_END_HOUR;
+  
+  // Convert UTC to IST (UTC + 5:30)
+  const utcHours = now.getUTCHours();
+  const utcMinutes = now.getUTCMinutes();
+  
+  // Add 5 hours 30 minutes for IST
+  let istHours = utcHours + 5;
+  let istMinutes = utcMinutes + 30;
+  
+  // Handle minute overflow
+  if (istMinutes >= 60) {
+    istHours += 1;
+    istMinutes -= 60;
+  }
+  
+  // Handle hour overflow (24-hour format)
+  istHours = istHours % 24;
+  
+  // Check if current IST time is in sleep window (2 AM - 5 AM IST)
+  return istHours >= SLEEP_START_HOUR && istHours < SLEEP_END_HOUR;
 };
 
 const selfPing = async () => {
   // Skip ping during sleep window
   if (isInSleepWindow()) {
-    console.log('⏰ [KEEP-ALIVE] In sleep window (2-5 AM UTC), skipping self-ping');
+    console.log('⏰ [KEEP-ALIVE] In sleep window (2-5 AM IST), skipping self-ping');
     return;
   }
 
@@ -90,7 +106,7 @@ const startKeepAlive = () => {
   }
 
   console.log('🚀 [KEEP-ALIVE] Starting server-side keep-alive');
-  console.log(`⏰ [KEEP-ALIVE] Sleep window: ${SLEEP_START_HOUR}:00 - ${SLEEP_END_HOUR}:00 UTC`);
+  console.log(`⏰ [KEEP-ALIVE] Sleep window: ${SLEEP_START_HOUR}:00 - ${SLEEP_END_HOUR}:00 IST (Indian Standard Time)`);
   console.log(`🔄 [KEEP-ALIVE] Ping interval: ${KEEP_ALIVE_INTERVAL / 1000 / 60} minutes`);
   
   // Initial ping after 1 minute (give server time to fully start)
@@ -111,7 +127,7 @@ app.get('/api/health', (req, res) => {
     keepAlive: {
       active: keepAliveInterval !== null,
       inSleepWindow: isInSleepWindow(),
-      sleepWindow: `${SLEEP_START_HOUR}:00 - ${SLEEP_END_HOUR}:00 UTC`
+      sleepWindow: `${SLEEP_START_HOUR}:00 - ${SLEEP_END_HOUR}:00 IST`
     }
   };
   console.log('💓 [HEALTH] Health check received');

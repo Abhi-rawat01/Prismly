@@ -8,8 +8,22 @@ interface ServerWakeUpProps {
 
 const isInSleepWindow = (): boolean => {
   const now = new Date();
-  const hour = now.getHours();
-  return hour >= 2 && hour < 5; // 2 AM - 5 AM
+  
+  // Convert UTC to IST (UTC + 5:30)
+  const utcHours = now.getUTCHours();
+  const utcMinutes = now.getUTCMinutes();
+  
+  let istHours = utcHours + 5;
+  let istMinutes = utcMinutes + 30;
+  
+  if (istMinutes >= 60) {
+    istHours += 1;
+    istMinutes -= 60;
+  }
+  
+  istHours = istHours % 24;
+  
+  return istHours >= 2 && istHours < 5; // 2-5 AM IST
 };
 
 const ServerWakeUp = ({ onServerReady }: ServerWakeUpProps) => {
@@ -95,7 +109,7 @@ const ServerWakeUp = ({ onServerReady }: ServerWakeUpProps) => {
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500">
               {inSleepWindow 
-                ? 'Sleep window: 2:00 AM - 5:00 AM • May take up to 60 seconds'
+                ? 'Sleep window: 2:00 AM - 5:00 AM IST • May take up to 60 seconds'
                 : 'This may take up to 60 seconds on first visit'
               }
             </p>
@@ -124,7 +138,7 @@ const ServerWakeUp = ({ onServerReady }: ServerWakeUpProps) => {
               {inSleepWindow ? (
                 <>
                   <Moon className="inline h-3 w-3 mr-1" />
-                  Server sleeps 2-5 AM to save resources. It will stay awake after waking!
+                  Server sleeps 2-5 AM IST to save resources. It will stay awake after waking!
                 </>
               ) : (
                 <>
