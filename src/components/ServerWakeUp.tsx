@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Loader2, Server, CheckCircle2 } from 'lucide-react';
+import { Loader2, Server, CheckCircle2, Moon } from 'lucide-react';
 
 interface ServerWakeUpProps {
   onServerReady: () => void;
 }
 
+const isInSleepWindow = (): boolean => {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= 2 && hour < 5; // 2 AM - 5 AM
+};
+
 const ServerWakeUp = ({ onServerReady }: ServerWakeUpProps) => {
   const [status, setStatus] = useState<'checking' | 'waking' | 'ready'>('checking');
   const [attempts, setAttempts] = useState(0);
+  const [inSleepWindow, setInSleepWindow] = useState(isInSleepWindow());
 
   useEffect(() => {
     const checkServer = async () => {
@@ -81,11 +88,16 @@ const ServerWakeUp = ({ onServerReady }: ServerWakeUpProps) => {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {status === 'checking' 
                 ? 'Connecting to the server...'
-                : 'The server was sleeping. Waking it up now...'
+                : inSleepWindow
+                  ? 'Server is in scheduled sleep mode (2-5 AM). Waking it up for you...'
+                  : 'The server was sleeping. Waking it up now...'
               }
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500">
-              This may take up to 60 seconds on first visit
+              {inSleepWindow 
+                ? 'Sleep window: 2:00 AM - 5:00 AM • May take up to 60 seconds'
+                : 'This may take up to 60 seconds on first visit'
+              }
             </p>
           </div>
 
@@ -103,10 +115,22 @@ const ServerWakeUp = ({ onServerReady }: ServerWakeUpProps) => {
           </div>
 
           {/* Info Box */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className={`p-4 rounded-lg border ${
+            inSleepWindow 
+              ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+              : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+          }`}>
             <p className="text-xs text-center text-gray-600 dark:text-gray-400">
-              💡 Free tier servers sleep after 15 minutes of inactivity. 
-              Once awake, your experience will be instant!
+              {inSleepWindow ? (
+                <>
+                  <Moon className="inline h-3 w-3 mr-1" />
+                  Server sleeps 2-5 AM to save resources. It will stay awake after waking!
+                </>
+              ) : (
+                <>
+                  💡 Server auto-pings every 10 minutes to stay awake. Once ready, your experience will be instant!
+                </>
+              )}
             </p>
           </div>
         </div>
