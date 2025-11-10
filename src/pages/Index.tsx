@@ -4,6 +4,7 @@ import { BarChart3, MessageCircle, Lock, Sparkles, Target, TrendingUp, Palette }
 import FileUpload from '@/components/FileUpload';
 import Dashboard from '@/components/Dashboard';
 import RelationshipTypeSelector from '@/components/RelationshipTypeSelector';
+import ServerWakeUp from '@/components/ServerWakeUp';
 import { ChatData } from '@/types/chat';
 import { handleChatParsing } from '@/pages/api/parse-chat';
 
@@ -13,6 +14,8 @@ const Index = () => {
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showServerWakeUp, setShowServerWakeUp] = useState(true);
+  const [serverReady, setServerReady] = useState(false);
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
@@ -66,6 +69,11 @@ const Index = () => {
     // Clear backup from Session Storage when resetting
     sessionStorage.removeItem('chat_backup');
     console.log('🗑️ Backup cleared from Session Storage');
+  };
+
+  const handleServerReady = () => {
+    setServerReady(true);
+    setShowServerWakeUp(false);
   };
 
   // Show loading state while analyzing
@@ -144,7 +152,11 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900">
+    <>
+      {showServerWakeUp && !serverReady && (
+        <ServerWakeUp onServerReady={handleServerReady} />
+      )}
+      <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900">
       {/* Animated Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
@@ -295,6 +307,7 @@ const Index = () => {
         </p>
       </footer>
     </div>
+    </>
   );
 };
 
