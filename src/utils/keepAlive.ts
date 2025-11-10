@@ -9,11 +9,13 @@ let pingInterval: NodeJS.Timeout | null = null;
 
 /**
  * Check if current time is within scheduled sleep window
+ * Uses UTC time to ensure consistent sleep window globally
  */
 const isInSleepWindow = (): boolean => {
   const now = new Date();
-  const hour = now.getHours();
-  return hour >= SLEEP_START_HOUR && hour < SLEEP_END_HOUR;
+  const hourUTC = now.getUTCHours();
+  // 2-5 AM UTC is when global traffic is typically lowest
+  return hourUTC >= SLEEP_START_HOUR && hourUTC < SLEEP_END_HOUR;
 };
 
 /**

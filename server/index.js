@@ -4,12 +4,19 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Keep-alive configuration
+const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const SLEEP_START_HOUR = 2; // 2 AM
+const SLEEP_END_HOUR = 5; // 5 AM
+let keepAliveInterval = null;
 
 // Middleware
 app.use(cors());
@@ -46,11 +53,69 @@ const upload = multer({
   }
 });
 
+// Keep-alive functions
+const isInSleepWindow = () => {
+  const now = new Date();
+  const hour = now.getUTCHours(); // Use UTC time
+  // Adjust for your timezone if needed (e.g., IST is UTC+5:30)
+  // For IST: const istHour = (hour + 5) % 24;
+  return hour >= SLEEP_START_HOUR && hour < SLEEP_END_HOUR;
+};
+
+const selfPing = async () => {
+  // Skip ping during sleep window
+  if (isInSleepWindow()) {
+    console.log('⏰ [KEEP-ALIVE] In sleep window (2-5 AM UTC), skipping self-ping');
+    return;
+  }
+
+  try {
+    const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    const response = await fetch(`${url}/api/health`, {
+      method: 'GET',
+      timeout: 5000
+    });
+    
+    if (response.ok) {
+      console.log('💚 [KEEP-ALIVE] Self-ping successful - Server staying awake');
+    }
+  } catch (error) {
+    console.warn('⚠️ [KEEP-ALIVE] Self-ping failed:', error.message);
+  }
+};
+
+const startKeepAlive = () => {
+  if (keepAliveInterval) {
+    return; // Already running
+  }
+
+  console.log('🚀 [KEEP-ALIVE] Starting server-side keep-alive');
+  console.log(`⏰ [KEEP-ALIVE] Sleep window: ${SLEEP_START_HOUR}:00 - ${SLEEP_END_HOUR}:00 UTC`);
+  console.log(`🔄 [KEEP-ALIVE] Ping interval: ${KEEP_ALIVE_INTERVAL / 1000 / 60} minutes`);
+  
+  // Initial ping after 1 minute (give server time to fully start)
+  setTimeout(selfPing, 60000);
+  
+  // Set up recurring pings
+  keepAliveInterval = setInterval(selfPing, KEEP_ALIVE_INTERVAL);
+};
+
 // API Routes
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+  const status = {
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    keepAlive: {
+      active: keepAliveInterval !== null,
+      inSleepWindow: isInSleepWindow(),
+      sleepWindow: `${SLEEP_START_HOUR}:00 - ${SLEEP_END_HOUR}:00 UTC`
+    }
+  };
+  console.log('💓 [HEALTH] Health check received');
+  res.json(status);
 });
 
 // Upload file endpoint
@@ -138,4 +203,7 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Uploads directory: ${uploadsDir}`);
+  
+  // Start keep-alive mechanism
+  startKeepAlive();
 });
