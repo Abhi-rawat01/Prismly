@@ -187,84 +187,59 @@ app.get('/api/health', (req, res) => {
   res.json(status);
 });
 
-// Sleep tracking endpoint
+// Sleep tracking endpoint - Simple format
 app.get('/api/sleep', (req, res) => {
   const tracking = loadSleepTracking();
+  const totalMinutes = tracking.totalSleepMinutes;
+  
+  // Calculate days, hours, minutes
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const remainingAfterDays = totalMinutes % (24 * 60);
+  const hours = Math.floor(remainingAfterDays / 60);
+  const minutes = remainingAfterDays % 60;
+  
+  // Format based on duration
+  let sleepTime;
+  if (days > 0) {
+    sleepTime = `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
+  } else if (hours > 0) {
+    sleepTime = `${hours}:${String(minutes).padStart(2, '0')} hours`;
+  } else {
+    sleepTime = `${minutes} min`;
+  }
+  
+  // Get current month for monthly record
   const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   
-  // Group sleep sessions by month
-  const monthlyStats = {};
-  const dailyStats = {};
-  
+  // Calculate this month's sleep
+  let monthlyMinutes = 0;
   tracking.sleepSessions.forEach(session => {
-    const date = new Date(session.sleepStart);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const dayKey = `${monthKey}-${String(date.getDate()).padStart(2, '0')}`;
-    
-    // Monthly totals
-    if (!monthlyStats[monthKey]) {
-      monthlyStats[monthKey] = { totalMinutes: 0, sessions: 0 };
+    const sessionDate = new Date(session.sleepStart);
+    const sessionMonth = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}`;
+    if (sessionMonth === currentMonth) {
+      monthlyMinutes += session.durationMinutes;
     }
-    monthlyStats[monthKey].totalMinutes += session.durationMinutes;
-    monthlyStats[monthKey].sessions += 1;
-    
-    // Daily totals
-    if (!dailyStats[dayKey]) {
-      dailyStats[dayKey] = { totalMinutes: 0, sessions: 0 };
-    }
-    dailyStats[dayKey].totalMinutes += session.durationMinutes;
-    dailyStats[dayKey].sessions += 1;
   });
   
-  // Format monthly stats
-  const formattedMonthly = Object.entries(monthlyStats).map(([month, stats]) => {
-    const hours = Math.floor(stats.totalMinutes / 60);
-    const minutes = stats.totalMinutes % 60;
-    return {
-      month,
-      format: `${month}:${String(hours).padStart(2, '0')}h:${String(minutes).padStart(2, '0')}m`,
-      totalMinutes: stats.totalMinutes,
-      totalHours: (stats.totalMinutes / 60).toFixed(2),
-      sessions: stats.sessions
-    };
-  });
+  const monthDays = Math.floor(monthlyMinutes / (24 * 60));
+  const monthRemainingAfterDays = monthlyMinutes % (24 * 60);
+  const monthHours = Math.floor(monthRemainingAfterDays / 60);
+  const monthMinutes = monthRemainingAfterDays % 60;
   
-  // Format daily stats
-  const formattedDaily = Object.entries(dailyStats).map(([day, stats]) => {
-    const hours = Math.floor(stats.totalMinutes / 60);
-    const minutes = stats.totalMinutes % 60;
-    return {
-      day,
-      format: `${day}:${String(hours).padStart(2, '0')}h:${String(minutes).padStart(2, '0')}m`,
-      totalMinutes: stats.totalMinutes,
-      totalHours: (stats.totalMinutes / 60).toFixed(2),
-      sessions: stats.sessions
-    };
-  });
-  
-  // Calculate uptime since server start
-  const uptimeMinutes = serverStartTime ? Math.floor((now - serverStartTime) / 1000 / 60) : 0;
-  const uptimeHours = Math.floor(uptimeMinutes / 60);
-  const uptimeDays = Math.floor(uptimeHours / 24);
+  let monthlySleepTime;
+  if (monthDays > 0) {
+    monthlySleepTime = `${monthDays} day${monthDays > 1 ? 's' : ''} ${monthHours} hour${monthHours !== 1 ? 's' : ''}`;
+  } else if (monthHours > 0) {
+    monthlySleepTime = `${monthHours}:${String(monthMinutes).padStart(2, '0')} hours`;
+  } else {
+    monthlySleepTime = `${monthMinutes} min`;
+  }
   
   res.json({
-    status: 'ok',
-    timestamp: now.toISOString(),
-    serverStartTime: serverStartTime?.toISOString(),
-    uptime: {
-      minutes: uptimeMinutes,
-      hours: uptimeHours,
-      days: uptimeDays,
-      formatted: `${uptimeDays}d ${uptimeHours % 24}h ${uptimeMinutes % 60}m`
-    },
-    totalSleep: {
-      minutes: tracking.totalSleepMinutes,
-      hours: (tracking.totalSleepMinutes / 60).toFixed(2),
-      formatted: `${Math.floor(tracking.totalSleepMinutes / 60)}h ${tracking.totalSleepMinutes % 60}m`
-    },
-    monthly: formattedMonthly,
-    daily: formattedDaily,
-    recentSessions: tracking.sleepSessions.slice(-10).reverse(), // Last 10 sessions
+    sleepTime: sleepTime,
+    monthlyRecord: monthlySleepTime,
+    currentMonth: currentMonth,
     totalSessions: tracking.sleepSessions.length
   });
 });
