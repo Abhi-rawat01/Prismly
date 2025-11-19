@@ -2,9 +2,9 @@ name: Keep Server Awake
 
 on:
   schedule:
-    # Runs every 10 minutes, 24/7
-    # Skip 2-5 AM IST (20:30-23:30 UTC previous day) for sleep window
-    - cron: '*/10 * * * *'
+    # Runs once daily at 5:00 AM IST (11:30 PM UTC previous day)
+    # Wakes server after sleep window (2-5 AM IST)
+    - cron: '30 23 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
@@ -44,10 +44,10 @@ jobs:
             });
             
             console.log('✅ Website loaded successfully!');
-            console.log('⏳ Keeping page open for 90 seconds to trigger self-ping...');
+            console.log('⏳ Keeping page open for 5 minutes to trigger self-ping...');
             
-            // Keep the page open for 90 seconds
-            await new Promise(resolve => setTimeout(resolve, 90000));
+            // Keep the page open for 5 minutes (300 seconds)
+            await new Promise(resolve => setTimeout(resolve, 300000));
             
             console.log('💚 Self-ping mechanism should be active now!');
             
