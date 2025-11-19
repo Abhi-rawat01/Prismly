@@ -1,0 +1,63 @@
+name: Keep Server Awake
+
+on:
+  schedule:
+    # Runs every 10 minutes, 24/7
+    # Skip 2-5 AM IST (20:30-23:30 UTC previous day) for sleep window
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install Puppeteer
+        run: npm install puppeteer
+      
+      - name: Visit website and keep alive
+        run: |
+          node -e "
+          const puppeteer = require('puppeteer');
+          
+          (async () => {
+            console.log('🚀 Launching browser...');
+            const browser = await puppeteer.launch({
+              headless: 'new',
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            
+            const page = await browser.newPage();
+            
+            console.log('🌐 Opening Prismly website...');
+            await page.goto('https://prismly-9eeg.onrender.com', {
+              waitUntil: 'networkidle2',
+              timeout: 120000
+            });
+            
+            console.log('✅ Website loaded successfully!');
+            console.log('⏳ Keeping page open for 90 seconds to trigger self-ping...');
+            
+            // Keep the page open for 90 seconds
+            await new Promise(resolve => setTimeout(resolve, 90000));
+            
+            console.log('💚 Self-ping mechanism should be active now!');
+            
+            await browser.close();
+            console.log('✨ Done! Server is awake and will maintain itself.');
+          })();
+          "
+      
+      - name: Verify server is responding
+        run: |
+          echo "🔍 Checking server health..."
+          curl -f https://prismly-9eeg.onrender.com/api/health || exit 1
+          echo "✅ Server is healthy!"
