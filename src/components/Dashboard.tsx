@@ -83,7 +83,8 @@ const Dashboard = ({ chatData, relationshipType: initialRelationshipType, onRese
     totalMessages: chatData.totalMessages,
     messageRatio: chatData.messageRatio,
     consistencyRatio: chatData.consistencyRatio,
-    relationshipType: relationshipType
+    relationshipType: relationshipType,
+    participants: chatData.participants
   }), [chatData, relationshipType]);
 
   // Calculate advanced analytics (memoized for performance)

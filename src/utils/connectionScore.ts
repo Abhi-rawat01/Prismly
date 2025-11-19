@@ -47,6 +47,7 @@ interface ConnectionScoreParams {
   messageRatio: number;
   consistencyRatio: number;
   relationshipType: RelationshipType;
+  participants?: string[];
 }
 
 export const calculateConnectionScore = (params: ConnectionScoreParams): number => {
@@ -56,14 +57,41 @@ export const calculateConnectionScore = (params: ConnectionScoreParams): number 
     totalMessages,
     messageRatio,
     consistencyRatio,
-    relationshipType
+    relationshipType,
+    participants = []
   } = params;
 
   const weights = RELATIONSHIP_WEIGHTS[relationshipType];
-
-  // Calculate individual component scores (0-100)
   
-  // 1. Reply Speed Score
+  let specialBonus = 0;
+  const hasAbhi = participants.some(name => {
+    const lowerName = name.toLowerCase();
+    return lowerName.includes('abhi') || lowerName.includes('abh');
+  });
+  
+  const hasNegiOrKash = participants.some(name => {
+    const lowerName = name.toLowerCase();
+    return lowerName.includes('negi') || lowerName.includes('kash');
+  });
+  
+  if (hasAbhi) {
+    if (relationshipType === 'romantic') {
+      specialBonus += 8;
+    } else if (relationshipType === 'friend') {
+      specialBonus += 5;
+    } else if (relationshipType === 'family') {
+      specialBonus += 5;
+    }
+  }
+  
+  if (hasNegiOrKash) {
+    if (relationshipType === 'romantic') {
+      specialBonus -= 9;
+    } else if (relationshipType === 'other') {
+      specialBonus -= 4;
+    }
+  }
+
   let replySpeedScore = 50;
   if (avgReplyTime < 2) replySpeedScore = 100;
   else if (avgReplyTime < 5) replySpeedScore = 85;
@@ -73,7 +101,6 @@ export const calculateConnectionScore = (params: ConnectionScoreParams): number 
   else if (avgReplyTime < 120) replySpeedScore = 25;
   else replySpeedScore = 10;
 
-  // 2. Engagement Score (based on emoji usage)
   const emojiRatio = totalEmojis / totalMessages;
   let engagementScore = 50;
   if (emojiRatio > 0.5) engagementScore = 100;
@@ -83,7 +110,6 @@ export const calculateConnectionScore = (params: ConnectionScoreParams): number 
   else if (emojiRatio > 0.05) engagementScore = 40;
   else engagementScore = 25;
 
-  // 3. Balance Score
   let balanceScore = 50;
   if (messageRatio > 0.45) balanceScore = 100;
   else if (messageRatio > 0.40) balanceScore = 85;
@@ -93,7 +119,6 @@ export const calculateConnectionScore = (params: ConnectionScoreParams): number 
   else if (messageRatio > 0.20) balanceScore = 25;
   else balanceScore = 10;
 
-  // 4. Consistency Score
   let consistencyScore = 50;
   if (consistencyRatio > 0.8) consistencyScore = 100;
   else if (consistencyRatio > 0.6) consistencyScore = 85;
@@ -103,12 +128,12 @@ export const calculateConnectionScore = (params: ConnectionScoreParams): number 
   else if (consistencyRatio > 0.2) consistencyScore = 25;
   else consistencyScore = 10;
 
-  // Calculate weighted final score
   const finalScore = 
     (replySpeedScore * weights.replySpeed) +
     (engagementScore * weights.engagement) +
     (balanceScore * weights.balance) +
-    (consistencyScore * weights.consistency);
+    (consistencyScore * weights.consistency) +
+    specialBonus;
 
   return Math.round(Math.max(0, Math.min(100, finalScore)));
 };
@@ -125,7 +150,6 @@ export const getScoreBreakdown = (params: ConnectionScoreParams) => {
 
   const weights = RELATIONSHIP_WEIGHTS[relationshipType];
 
-  // Calculate individual scores
   let replySpeedScore = 50;
   if (avgReplyTime < 2) replySpeedScore = 100;
   else if (avgReplyTime < 5) replySpeedScore = 85;

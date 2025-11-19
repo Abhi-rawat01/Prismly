@@ -1,12 +1,13 @@
 # Cron Job Setup Guide
 
 ## Purpose
-Set up a single daily cron job to wake up the Render server at 5:00 AM after the scheduled sleep window (2-5 AM).
+Set up a cron job to ping the Render server every 10 minutes to keep it awake 24/7 (except during scheduled sleep window 2-5 AM IST).
 
-## Why Only One Call?
-- **Server-side keep-alive**: The server pings itself every 10 minutes to stay awake
-- **Scheduled sleep**: Server allows sleep from 2-5 AM to save resources
-- **Morning wake-up**: One cron job at 5 AM wakes the server, then it keeps itself awake all day
+## Why External Cron?
+- **Render limitation**: Self-pings from the server don't count as external traffic
+- **Free tier sleep**: Render sleeps the server after 15 minutes of no external requests
+- **Solution**: External cron job pings every 10 minutes to keep server awake
+- **Scheduled sleep**: Optionally skip pings during 2-5 AM IST to save resources
 
 ## Setup Instructions
 
@@ -27,9 +28,13 @@ Click "Create cronjob" and configure:
 - **Request Method**: GET
 
 **Schedule:**
-- **Type**: Select "Every day"
-- **Time**: `05:00` (5:00 AM)
+- **Type**: Select "Custom"
+- **Cron Expression**: `*/10 * * * *` (every 10 minutes)
 - **Timezone**: Select "Asia/Kolkata" (Indian Standard Time)
+
+**Optional - Skip Sleep Window (2-5 AM IST):**
+If you want to allow sleep during 2-5 AM, use this expression instead:
+- **Cron Expression**: `*/10 0-1,5-23 * * *` (every 10 min, except 2-5 AM)
 
 **Advanced (Optional):**
 - **Timeout**: 30 seconds
