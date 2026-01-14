@@ -14,8 +14,63 @@ export const FileUpload = ({ onFileUpload, isAnalyzing }: FileUploadProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
+  const validateFile = (selectedFile: File): boolean => {
+    // Check file size (limit to 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (selectedFile.size > maxSize) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Please upload a file smaller than 10MB.",
+      });
+      return false;
+    }
+
+    // Check file extension
+    const validExtensions = ['.txt', '.zip'];
+    const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please upload a .txt file or .zip file containing WhatsApp chat export.",
+      });
+      return false;
+    }
+
+    // For .txt files, check MIME type
+    if (fileExtension === '.txt' && selectedFile.type !== 'text/plain') {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please upload a .txt file with plain text format.",
+      });
+      return false;
+    }
+
+    // For .zip files, check MIME type
+    if (fileExtension === '.zip' && 
+        selectedFile.type !== 'application/zip' && 
+        selectedFile.type !== 'application/x-zip-compressed') {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please upload a valid .zip file.",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleFile = useCallback(async (selectedFile: File | null) => {
     if (!selectedFile) return;
+
+    // Validate file before processing
+    if (!validateFile(selectedFile)) {
+      return;
+    }
 
     // Handle .txt files directly
     if (selectedFile.name.endsWith('.txt') && selectedFile.type === 'text/plain') {
@@ -49,6 +104,12 @@ export const FileUpload = ({ onFileUpload, isAnalyzing }: FileUploadProps) => {
         
         // Create a new File object from the extracted content
         const extractedFile = new File([txtContent], txtFileName, { type: 'text/plain' });
+        
+        // Validate extracted file
+        if (!validateFile(extractedFile)) {
+          return;
+        }
+        
         setFile(extractedFile);
 
         toast({
