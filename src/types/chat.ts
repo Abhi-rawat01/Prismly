@@ -58,3 +58,30 @@ export interface ChatData {
   startDate: Date;
   endDate: Date;
 }
+
+export type RelationshipType = 'friend' | 'family' | 'romantic' | 'professional' | 'other';
+
+export interface AppState {
+  uploadedFile: File | null;
+  relationshipType: RelationshipType | null;
+  chatData: ChatData | null;
+  isAnalyzing: boolean;
+  error: string | null;
+  showServerWakeUp: boolean;
+  serverReady: boolean;
+}
+
+export interface FileUploadProps {
+  onFileUpload: (file: File) => void;
+  isAnalyzing: boolean;
+}
+
+export interface DashboardProps {
+  chatData: ChatData;
+  relationshipType: RelationshipType;
+  onReset: () => void;
+}
+
+export interface ServerWakeUpProps {
+  onServerReady: () => void;
+}

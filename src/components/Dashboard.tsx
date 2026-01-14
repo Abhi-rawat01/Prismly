@@ -38,7 +38,7 @@ import { useState, useMemo } from 'react';
 
 interface DashboardProps {
   chatData: ChatData;
-  relationshipType: string;
+  relationshipType: RelationshipType;
   onReset: () => void;
 }
 

@@ -1,21 +1,36 @@
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { Card } from '@/components/ui/card';
 import { BarChart3, MessageCircle, Lock, Sparkles, Target, TrendingUp, Palette } from 'lucide-react';
-import FileUpload from '@/components/FileUpload';
-import Dashboard from '@/components/Dashboard';
-import RelationshipTypeSelector from '@/components/RelationshipTypeSelector';
-import ServerWakeUp from '@/components/ServerWakeUp';
+import { useAppStore } from '@/store/appStore';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { ChatData } from '@/types/chat';
 import { handleChatParsing } from '@/pages/api/parse-chat';
 
+// Lazy load heavy components
+const FileUpload = lazy(() => import('@/components/FileUpload'));
+const Dashboard = lazy(() => import('@/components/Dashboard'));
+const RelationshipTypeSelector = lazy(() => import('@/components/RelationshipTypeSelector'));
+const ServerWakeUp = lazy(() => import('@/components/ServerWakeUp'));
+
 const Index = () => {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [relationshipType, setRelationshipType] = useState<string | null>(null);
-  const [chatData, setChatData] = useState<ChatData | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showServerWakeUp, setShowServerWakeUp] = useState(true);
-  const [serverReady, setServerReady] = useState(false);
+  const { 
+    uploadedFile, 
+    relationshipType, 
+    chatData, 
+    isAnalyzing, 
+    error, 
+    showServerWakeUp, 
+    serverReady,
+    setUploadedFile,
+    setRelationshipType,
+    setChatData,
+    setIsAnalyzing,
+    setError,
+    setShowServerWakeUp,
+    setServerReady,
+    resetState
+  } = useAppStore();
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
@@ -62,10 +77,7 @@ const Index = () => {
   };
 
   const handleReset = () => {
-    setChatData(null);
-    setUploadedFile(null);
-    setRelationshipType(null);
-    setError(null);
+    resetState();
     // Clear backup from Session Storage when resetting
     sessionStorage.removeItem('chat_backup');
     console.log('🗑️ Backup cleared from Session Storage');
@@ -148,13 +160,23 @@ const Index = () => {
   }
 
   if (chatData && relationshipType) {
-    return <Dashboard chatData={chatData} relationshipType={relationshipType} onReset={handleReset} />;
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingSkeleton />}>
+          <Dashboard chatData={chatData} relationshipType={relationshipType} onReset={handleReset} />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
   return (
     <>
       {showServerWakeUp && !serverReady && (
-        <ServerWakeUp onServerReady={handleServerReady} />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingSkeleton />}>
+            <ServerWakeUp onServerReady={handleServerReady} />
+          </Suspense>
+        </ErrorBoundary>
       )}
       <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900">
       {/* Animated Background */}
@@ -225,7 +247,11 @@ const Index = () => {
           {/* File Upload Card */}
           <div className="flex justify-center">
             <Card className="max-w-lg w-full p-6 md:p-8 glass-effect shadow-2xl border-2 hover:shadow-purple-200/50 dark:hover:shadow-purple-900/50 transition-all duration-300">
-              <FileUpload onFileUpload={handleFileUpload} isAnalyzing={isAnalyzing} />
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingSkeleton />}>
+                  <FileUpload onFileUpload={handleFileUpload} isAnalyzing={isAnalyzing} />
+                </Suspense>
+              </ErrorBoundary>
               {error && (
                 <div className="mt-6 text-center text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
                   <p className="font-bold text-lg">Analysis Failed</p>
